@@ -13,7 +13,7 @@ const bot = new Bot(token);
 
 startup()
     .catch((e) => {
-        log.error('Catastrophic failure: ', e);
+        log.error('Catastrophic failure: %s', e.message);
         process.exit(1);
     });
 
