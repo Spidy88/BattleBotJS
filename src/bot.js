@@ -1,7 +1,7 @@
 const Discord = require('discord.js');
 const pino = require('pino');
 const noop = require('lodash/noop');
-const isArrayLike = require('lodash/isArrayLike');
+const trimStart = require('lodash/trimStart');
 const log = pino();
 
 class Bot {
@@ -16,6 +16,7 @@ class Bot {
 
         this.commands.set('!register', registerUser);
         this.commands.set('!rules', displayRules);
+        this.commands.set('!setRules', setRules);
         this.commands.set('!signup', signUp);
         this.commands.set('!withdraw', withdraw);
         this.commands.set('!bracket', printBracket);
@@ -63,22 +64,12 @@ async function isOwner(user) {
 const players = new Map();
 async function registerUser(message) {
     const users = message.mentions.users.array();
-    const members = message.mentions.members;
     const mentionedSelf = users.length === 1 && users[0].id === message.author.id;
     const isRegisteringSelf = !users.length || mentionedSelf;
     const canRegisterOthers = (await Promise.allSettled([
         isTournamentMod(message.author),
         isOwner(message.author)
     ])).some(Boolean);
-
-    log.info('is array: %s', isArrayLike(users));
-    log.info('mentions: %s', message.mentions);
-    log.info('Users length: %s', users.length);
-    log.info('Users id: %s', users.length && users[0].id);
-    log.info('members length: %s', members.length);
-    log.info('members id: %s', members.length && members[0].id);
-    log.info('Authors id: %s', message.author.id);
-    log.info('Is registering self: %s', isRegisteringSelf);
 
     if (!isRegisteringSelf && !canRegisterOthers) {
         await message.reply('You do not have permission to register other users');
@@ -107,7 +98,28 @@ async function registerUser(message) {
     // TODO: Save data back up
 }
 
-function displayRules(message) {}
+// TODO: Put this somewhere permanent
+let rules = 'THERE ARE NO RULES. ITS ANARCHY';
+async function setRules(message) {
+    const canChangeRules = (await Promise.allSettled([
+        isTournamentMod(message.author),
+        isOwner(message.author)
+    ])).some(Boolean);
+
+    if (!canChangeRules) {
+        await message.reply('You do not have permission to set the tournament rules');
+        return;
+    }
+
+    rules = trimStart(trimStart(message.content, '!setRules'));
+    await message.reply('Rules updated');
+}
+
+// TODO: These need to be set by the Guild Mods and we'll just repeat it
+async function displayRules(message) {
+    await message.channel.send(rules);
+}
+
 function signUp(message) {}
 function withdraw(message) {}
 function printBracket(message) {}
