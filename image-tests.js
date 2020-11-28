@@ -1,54 +1,36 @@
-const path = require('path');
-
-const cardWidth = 200;
-const cardHeight = 50;
-const padding = 8;
-const avatarX = padding;
-const avatarY = padding;
-const avatarSize = cardHeight - (padding * 2);
-const textX = avatarSize + (padding * 2);
-const textY = padding;
-const textHeight = cardHeight - (padding * 2);
-const textWidth = cardWidth - avatarSize - (padding * 3);
-
 const Jimp = require('jimp');
-let font;
+const path = require('path');
+const ImageSystem = require('./src/image-system');
 
-async function createPlayerCard(user, size) {
-    // Lazy load but keep cached
-    if (!font) {
-        font = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
-    }
-    
-    // TODO: This comes from the user param, should be url
-    let avatar = await Jimp.read(path.resolve(__dirname, 'avatar.jpg'));
-    avatar.scaleToFit(avatarSize, avatarSize);
+const spidy = {
+    username: 'Spidy88'
+};
+const genzume = {
+    avatarUrl: 'https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/avatars/7a/7a5167a4b45fe0e47f743734ec3de802a9d34a22_full.jpg',
+    username: 'Genzume',
+    score: 10
+};
 
-    let image = await Jimp.read(cardWidth, cardHeight, '#DDD');
-    image.composite(avatar, avatarX, avatarY);
+(async function() {
+    console.log('Creating card 1');
+    const card1 = await ImageSystem.createPlayerCard(spidy, { width: 400, height: 100 });
+    console.log('Creating card 2');
+    const card2 = await ImageSystem.createPlayerCard(genzume, { width: 400, height: 100 });
+    console.log('Creating card 3');
+    const card3 = await ImageSystem.createPlayerCard({ username: 'Spidy88Spidy88Spidy88Spidy88', score: 4, isFinalScore: true, isWinner: false }, { width: 400, height: 100 });
+    console.log('Creating card 4');
+    const card4 = await ImageSystem.createPlayerCard({ username: 'Genzume', score: 6, isFinalScore: true, isWinner: true }, { width: 400, height: 100 });
 
-    const ellipsisWidth = Jimp.measureText(font, '...');
-    let username = user.username;
-    let currentTextWidth = Jimp.measureText(font, username);
-    let fitsHorizontally = currentTextWidth <= textWidth;
-    while(!fitsHorizontally) {
-        // Calculate the percentage of text reduction needed
-        // factoring in the ellipsis size. We might undershoot
-        // our desired width given font kerning but if we
-        // overshoot, we'll lop it off on the next loop.
-        username = username.substring(0, username.length * ((textWidth - ellipsisWidth) / currentTextWidth)) + '...';
-        currentTextWidth = Jimp.measureText(font, username);
-        fitsHorizontally = currentTextWidth <= textWidth;
-    }
+    console.log('Writing files');
+    await card1.writeAsync(path.resolve(__dirname, 'output1.png'));
+    await card2.writeAsync(path.resolve(__dirname, 'output2.png'));
+    await card3.writeAsync(path.resolve(__dirname, 'output3.png'));
+    await card4.writeAsync(path.resolve(__dirname, 'output4.png'));
 
-    image.print(font, textX, textY, {
-        text: username,
-        alignmentX: Jimp.HORIZONTAL_ALIGN_LEFT,
-        alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
-    }, Infinity, textHeight);
-
-    const outputPath = path.resolve(__dirname, 'output.png');
-    console.log('Writing image to: ', outputPath);
-    console.log('Image extension: ', image.getExtension());
-    await image.writeAsync(outputPath);
-}
+    const match1 = await ImageSystem.createMatchCard({ player1: spidy, player2: { username: 'Genzume', avatarUrl: 'https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/avatars/7a/7a5167a4b45fe0e47f743734ec3de802a9d34a22_full.jpg' } });
+    await match1.writeAsync(path.resolve(__dirname, 'match1.png'));
+    const match2 = await ImageSystem.createMatchCard({ player1: { username: 'Spidy88Spidy88Spidy88Spidy88Spidy88', score: 5 }, player2: genzume });
+    await match2.writeAsync(path.resolve(__dirname, 'match2.png'));
+    const match3 = await ImageSystem.createMatchCard({ player1: { username: 'Spidy88', score: 5, isFinalScore: true, isWinner: false }, player2: { avatarUrl: 'https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/avatars/7a/7a5167a4b45fe0e47f743734ec3de802a9d34a22_full.jpg', username: 'Genzume', score: 8, isFinalScore: true, isWinner: true } });
+    await match3.writeAsync(path.resolve(__dirname, 'match3.png'));
+})();
