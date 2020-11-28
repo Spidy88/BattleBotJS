@@ -12,12 +12,15 @@ const genzume = {
 };
 
 (async function() {
-    // const card1 = await ImageSystem.createPlayerCard(spidy, { width: 400, height: 100 });
+    const card1 = await ImageSystem.createPlayerCard({
+        username: '___________',
+        avatarUrl: path.resolve(__dirname, 'unknown-avatar.png')
+    }, { width: 400, height: 100 });
     // const card2 = await ImageSystem.createPlayerCard(genzume, { width: 400, height: 100 });
     // const card3 = await ImageSystem.createPlayerCard({ username: 'Spidy88Spidy88Spidy88Spidy88', score: 4, isFinalScore: true, isWinner: false }, { width: 400, height: 100 });
     // const card4 = await ImageSystem.createPlayerCard({ username: 'Genzume', score: 6, isFinalScore: true, isWinner: true }, { width: 400, height: 100 });
 
-    // await card1.writeAsync(path.resolve(__dirname, 'output1.png'));
+    await card1.writeAsync(path.resolve(__dirname, 'output1.png'));
     // await card2.writeAsync(path.resolve(__dirname, 'output2.png'));
     // await card3.writeAsync(path.resolve(__dirname, 'output3.png'));
     // await card4.writeAsync(path.resolve(__dirname, 'output4.png'));
@@ -29,22 +32,87 @@ const genzume = {
     // const match3 = await ImageSystem.createMatchCard({ player1: { username: 'Spidy88', score: 5, isFinalScore: true, isWinner: false }, player2: { avatarUrl: 'https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/avatars/7a/7a5167a4b45fe0e47f743734ec3de802a9d34a22_full.jpg', username: 'Genzume', score: 8, isFinalScore: true, isWinner: true } });
     // await match3.writeAsync(path.resolve(__dirname, 'match3.png'));
 
-    const matches0 = [{
-        player1: {username: 'Spidy'},
-        player2: {username: 'Genzume'}
-    }, {
-        player1: {username: 'Tony'},
-        player2: {username: 'Martin'}
-    }];
-    const matches1 = [{
-        player1: {username: 'Spidy'},
-        player2: {username: 'Tony'}
-    }];
-    const matches2 = [];
-    const round0 = await ImageSystem.createRound(0, matches0);
-    const round1 = await ImageSystem.createRound(1, matches1);
+    const playerCount = 14;
+    const players = [];
+    for( let i = 0; i < playerCount; ++i) {
+        players.push({ username: `Player${i+1}` });
+    }
+    const rounds = Math.ceil(Math.log2(players.length));
+    const byes = Math.pow(2, rounds) - players.length;
+
+    let entries = [...players];
+    entries = [
+        ...entries.slice(0, Math.floor(entries.length/2) + 1),
+        ...(new Array(byes).fill({ username: '-Bye-' })),
+        ...entries.slice(Math.floor(entries.length/2) + 1)
+    ];
+
+    let quadrants = [[], [], [], []];
+    for( let i = 0, j = entries.length - 1; i < j; ++i, --j) {
+        quadrants[i%4].push({
+            player1: entries[i],
+            player2: entries[j]
+        });
+    }
+    console.log('Quadrants: ', quadrants);
+
+    let leftRound0 = [...quadrants[0], ...quadrants[2]];
+    let rightRound0 = [...quadrants[1], ...quadrants[3]];
+
+    // const round0L = await ImageSystem.createRound(0, leftRound);
+    // const round0R = await ImageSystem.createRound(0, rightRound);
+    // const round1L = await ImageSystem.createRound(1, leftRound1);
+    // const round1R = await ImageSystem.createRound(1, rightRound1);
     //const round2 = await ImageSystem.createRound(2, matches2);
-    await round0.writeAsync(path.resolve(__dirname, 'round0.png'));
-    await round1.writeAsync(path.resolve(__dirname, 'round1.png'));
+    // await round0L.writeAsync(path.resolve(__dirname, 'round0L.png'));
+    // await round0R.writeAsync(path.resolve(__dirname, 'round0R.png'));
+    // await round1L.writeAsync(path.resolve(__dirname, 'round1L.png'));
+    // await round1R.writeAsync(path.resolve(__dirname, 'round1R.png'));
+    //await round1.writeAsync(path.resolve(__dirname, 'round1.png'));
     //await round2.writeAsync(path.resolve(__dirname, 'round2.png'));
+    const tbd = { username: 'TBD' };
+
+    let leftRound1 = [];
+    let rightRound1 = [];
+    for( let i = 0; i < leftRound0.length; i += 2) {
+        leftRound1.push({
+            player1: tbd,
+            player2: tbd
+        });
+
+        rightRound1.push({
+            player1: tbd,
+            player2: tbd
+        });
+    }
+
+    let leftRound2 = leftRound1.slice(0, leftRound1.length / 2);
+    let rightRound2 = rightRound1.slice(0, rightRound1.length / 2);
+    let leftRound3 = leftRound2.slice(0, leftRound2.length / 2);
+    let rightRound3 = rightRound2.slice(0, rightRound2.length / 2);
+
+    const bracket = {
+        rounds: {
+            '0': {
+                left: leftRound0,
+                right: rightRound0
+            },
+            '1': {
+                left: leftRound1,
+                right: rightRound1
+            },
+            '2': {
+                left: leftRound2,
+                right: rightRound2
+            },
+            '3': {
+                left: leftRound3,
+                right: rightRound3
+            }
+        },
+        totalRounds: 4
+    };
+
+    const bracketImage = await ImageSystem.createBracket(bracket);
+    await bracketImage.writeAsync(path.resolve(__dirname, 'bracket.png'));
 })();

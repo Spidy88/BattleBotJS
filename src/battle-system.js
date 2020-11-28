@@ -45,24 +45,19 @@ const BattleSystem = {
 
         entries = [
             ...entries.slice(0, Math.floor(entries.length/2) + 1),
-            ...(new Array(byes).fill('-')),
+            ...(new Array(byes).fill({ username: 'Bye' })),
             ...entries.slice(Math.floor(entries.length/2) + 1)
         ];
 
-        /**
-         * let firstRound = [];
-for( let i = 0; i < entries.length / 2; ++i ) {
-  firstRound.push([entries[i], entries[entries.length - 1 - i]]);
-}
-         */
-
-        const bracket = [];
-        for (let round = 0; round < rounds; ++round) {
-            const matches = 0;
-            for (let match = 0; match < matches; ++match) {
-
-            }
+        let quadrants = [[], [], [], []];
+        for( let i = 0, j = entries.length - 1; i < j; ++i, --j) {
+            quadrants[i%4].push({
+                player1: (i + 1),
+                player2: (j + 1)
+            });
         }
+
+        console.log('Quadrants: ', quadrants);
     }
 };
 

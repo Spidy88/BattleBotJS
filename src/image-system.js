@@ -1,7 +1,7 @@
 const path = require('path');
 const Jimp = require('jimp');
 const defaultFontPromise = Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
-const defaultAvatarPath = path.resolve(__dirname, '../avatar.jpg');
+const defaultAvatarPath = path.resolve(__dirname, '../unknown-avatar.png');
 const defaultWinColor = '#329127';
 const defaultLoseColor = '#611d10';
 
@@ -126,21 +126,21 @@ async function createRound(round, matches) {
     return roundImage;
 }
 
-async function createBracket(players) {
-    const rounds = Math.ceil(Math.log2(players.length));
+async function createBracket(bracket) {
+    const rounds = bracket.totalRounds;
     const totalWidth = rounds * 2 * 500;
-    const totalHeight = 216 * Math.pow(2, rounds);
+    const totalHeight = 216 * Math.pow(2, rounds) / 4;
     const bracketImage = await Jimp.read(totalWidth, totalHeight, '#fff');
 
     for( let i = 0; i < rounds; ++i ) {
-        const roundMatchesLeft = [];
-        const roundMatchesRight = [];
+        const roundMatchesLeft = bracket.rounds[i].left;
+        const roundMatchesRight = bracket.rounds[i].right;
 
         const roundImageLeft = await createRound(i, roundMatchesLeft);
         const roundImageRight = await createRound(i, roundMatchesRight);
 
         const roundXLeft = i * 500;
-        const roundXRight = totalWidth - roundXLeft - roundImageRight.width;
+        const roundXRight = totalWidth - roundXLeft - roundImageRight.bitmap.width;
 
         bracketImage.composite(roundImageLeft, roundXLeft, 0);
         bracketImage.composite(roundImageRight, roundXRight, 0);
