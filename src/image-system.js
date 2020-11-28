@@ -110,18 +110,50 @@ async function createMatchCard(match, options = {}) {
     return matchCard;
 }
 
-async function createRound() {
+async function createRound(round, matches) {
     // matchSize = playerCard*2 + padding*2
-    // totalSize = 2 ** round (zero-based) * matchSize
+    const matchSize = 216;
+    const totalSize = Math.pow(2, round) * matchSize;
+
+    const roundImage = await Jimp.read(400, totalSize * matches.length);
+    for( let i = 0; i < matches.length; ++i ) {
+        const matchImage = await createMatchCard(matches[i]);
+        const matchY = (totalSize * i) + Math.floor(totalSize / 2) - Math.floor(matchSize / 2);
+
+        roundImage.composite(matchImage, 0, matchY + 8);
+    }
+
+    return roundImage;
 }
 
-async function createBracket() {
+async function createBracket(players) {
+    const rounds = Math.ceil(Math.log2(players.length));
+    const totalWidth = rounds * 2 * 500;
+    const totalHeight = 216 * Math.pow(2, rounds);
+    const bracketImage = await Jimp.read(totalWidth, totalHeight, '#fff');
 
+    for( let i = 0; i < rounds; ++i ) {
+        const roundMatchesLeft = [];
+        const roundMatchesRight = [];
+
+        const roundImageLeft = await createRound(i, roundMatchesLeft);
+        const roundImageRight = await createRound(i, roundMatchesRight);
+
+        const roundXLeft = i * 500;
+        const roundXRight = totalWidth - roundXLeft - roundImageRight.width;
+
+        bracketImage.composite(roundImageLeft, roundXLeft, 0);
+        bracketImage.composite(roundImageRight, roundXRight, 0);
+    }
+
+    return bracketImage;
 }
 
 const ImageSystem = {
     createPlayerCard,
-    createMatchCard
+    createMatchCard,
+    createRound,
+    createBracket
 };
 
 module.exports = ImageSystem;
