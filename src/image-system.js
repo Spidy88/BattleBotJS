@@ -21,9 +21,18 @@ const defaultStyle = {
 
 const currentStyle = cloneDeep(defaultStyle);
 
+function calcPlayerCardSize(options = {}) {
+    const width = options.teamCardWidth || currentStyle.teamCardWidth;
+    const height = options.teamCardHeight || currentStyle.teamCardHeight;
+
+    return { width, height };
+}
+
 async function createPlayerCard(user, options = {}) {
-    const cardWidth = options.teamCardWidth || currentStyle.teamCardWidth;
-    const cardHeight = options.teamCardHeight || currentStyle.teamCardHeight;
+    const {
+        width: cardWidth,
+        height: cardHeight
+    } = calcPlayerCardSize(options);
     const background = options.teamCardBackground || currentStyle.teamCardBackground;
     const padding = options.teamCardPadding || currentStyle.teamCardPadding;
     
@@ -38,13 +47,13 @@ async function createPlayerCard(user, options = {}) {
 
     const fontPromise = options.font ? Jimp.loadFont(options.font) : defaultFontPromise;
 
-    if (cardWidth/cardHeight < 1.3) {
+    if (cardWidth / cardHeight < 1.3) {
         throw new Error('Card dimensions should be greater than 4:1 width:height ratio');
     }
 
-    let font = await fontPromise;
-    let avatar = await Jimp.read(user.avatarUrl || defaultAvatarPath);
-    let image = await Jimp.read(cardWidth, cardHeight, background);
+    const font = await fontPromise;
+    const avatar = await Jimp.read(user.avatarUrl || defaultAvatarPath);
+    const image = await Jimp.read(cardWidth, cardHeight, background);
 
     let scoreWidth = 0
     
@@ -107,7 +116,19 @@ async function createPlayerCard(user, options = {}) {
     return image;
 }
 
+function calcMatchCardSize(options = {}) {
+    const playerCardSize = calcPlayerCardSize(options);
+    const width = playerCardSize.width;
+    const height = playerCardSize.height;
+
+    return { width, height };
+}
+
 async function createMatchCard(match, options = {}) {
+    const {
+        width: matchCardWidth,
+        height: matchCardHeight
+    } = calcMatchCardSize(options);
     const background = options.matchCardBackground || currentStyle.matchCardBackground;
     const padding = options.matchCardDividerGap || currentStyle.matchCardDividerGap;
     const dividerColor = options.matchCardDividerColor || currentStyle.matchCardDividerColor;
@@ -116,9 +137,9 @@ async function createMatchCard(match, options = {}) {
 
     const player1Card = await createPlayerCard(player1, options);
     const player2Card = await createPlayerCard(player2, options);
-    const divider = await Jimp.read(player1Card.bitmap.width - (padding * 2), 2, dividerColor);
+    const divider = await Jimp.read(matchCardWidth - (padding * 2), 2, dividerColor);
 
-    const matchCard = await Jimp.read(player1Card.bitmap.width, player1Card.bitmap.height * 2, background);
+    const matchCard = await Jimp.read(matchCardWidth, matchCardHeight, background);
     matchCard.composite(player1Card, 0, 0);
     matchCard.composite(player2Card, 0, player1Card.bitmap.height);
     matchCard.composite(divider, padding, player1Card.bitmap.height - 1);
@@ -127,17 +148,17 @@ async function createMatchCard(match, options = {}) {
 }
 
 async function createRound(round, matches, options = {}) {
-    const teamCardHeight = options.teamCardHeight || currentStyle.teamCardHeight;
+    const { height: matchCardHeight } = calcMatchCardSize(options);
     const matchCardDividerGap = options.matchCardDividerGap || currentStyle.matchCardDividerGap;
-    const matchSize = teamCardHeight * 2 + matchCardDividerGap;
-    const totalSize = Math.pow(2, round) * matchSize;
+    const matchSize = matchCardHeight + matchCardDividerGap;
+    const segmentSize = Math.pow(2, round) * matchSize;
 
-    const roundImage = await Jimp.read(400, totalSize * matches.length);
+    const roundImage = await Jimp.read(400, segmentSize * matches.length);
     for( let i = 0; i < matches.length; ++i ) {
         const matchImage = await createMatchCard(matches[i]);
-        const matchY = (totalSize * i) + Math.floor(totalSize / 2) - Math.floor(matchSize / 2);
+        const matchY = (segmentSize * i) + Math.floor(segmentSize / 2) - Math.floor(matchSize / 2);
 
-        roundImage.composite(matchImage, 0, matchY + 8);
+        roundImage.composite(matchImage, 0, matchY + matchCardDividerGap / 2);
     }
 
     return roundImage;

@@ -13,15 +13,15 @@ const genzume = {
 };
 
 (async function() {
-    const card1 = await ImageSystem.createPlayerCard({
-        username: '___________',
-        avatarUrl: path.resolve(__dirname, 'assets/unknown-avatar.png')
-    }, { width: 400, height: 100 });
+    // const card1 = await ImageSystem.createPlayerCard({
+    //     username: '___________',
+    //     avatarUrl: path.resolve(__dirname, 'assets/unknown-avatar.png')
+    // }, { width: 400, height: 100 });
     // const card2 = await ImageSystem.createPlayerCard(genzume, { width: 400, height: 100 });
     // const card3 = await ImageSystem.createPlayerCard({ username: 'Spidy88Spidy88Spidy88Spidy88', score: 4, isFinalScore: true, isWinner: false }, { width: 400, height: 100 });
     // const card4 = await ImageSystem.createPlayerCard({ username: 'Genzume', score: 6, isFinalScore: true, isWinner: true }, { width: 400, height: 100 });
 
-    await card1.writeAsync(path.resolve(__dirname, 'output1.png'));
+    // await card1.writeAsync(path.resolve(__dirname, 'output1.png'));
     // await card2.writeAsync(path.resolve(__dirname, 'output2.png'));
     // await card3.writeAsync(path.resolve(__dirname, 'output3.png'));
     // await card4.writeAsync(path.resolve(__dirname, 'output4.png'));
@@ -73,5 +73,5 @@ const genzume = {
 
     const bracket = BracketSystem.generateEmptyBracket(6);
     const bracketImage = await ImageSystem.createBracket(bracket);
-    await bracketImage.writeAsync(path.resolve(__dirname, 'bracket.png'));
+    await bracketImage.writeAsync(path.resolve(__dirname, 'output/bracket.png'));
 })();
