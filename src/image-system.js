@@ -5,8 +5,8 @@ const defaultFontPromise = Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
 const defaultAvatarPath = path.resolve(__dirname, '../assets/unknown-avatar.png');
 const defaultStyle = {
     bracketBackground: '#FFF',
-    bracketColumnGap: 100,
-    bracketRowGap: 12,
+    bracketColumnGap: 200,
+    bracketRowGap: 24,
     matchCardBackground: '#DDD',
     matchCardDividerColor: '#CCC',
     matchCardDividerGap: 12,
@@ -119,7 +119,7 @@ async function createPlayerCard(user, options = {}) {
 function calcMatchCardSize(options = {}) {
     const playerCardSize = calcPlayerCardSize(options);
     const width = playerCardSize.width;
-    const height = playerCardSize.height;
+    const height = playerCardSize.height * 2;
 
     return { width, height };
 }
@@ -132,11 +132,9 @@ async function createMatchCard(match, options = {}) {
     const background = options.matchCardBackground || currentStyle.matchCardBackground;
     const padding = options.matchCardDividerGap || currentStyle.matchCardDividerGap;
     const dividerColor = options.matchCardDividerColor || currentStyle.matchCardDividerColor;
-    const player1 = match.player1;
-    const player2 = match.player2;
 
-    const player1Card = await createPlayerCard(player1, options);
-    const player2Card = await createPlayerCard(player2, options);
+    const player1Card = await createPlayerCard(match.player1, options);
+    const player2Card = await createPlayerCard(match.player2, options);
     const divider = await Jimp.read(matchCardWidth - (padding * 2), 2, dividerColor);
 
     const matchCard = await Jimp.read(matchCardWidth, matchCardHeight, background);
@@ -148,37 +146,58 @@ async function createMatchCard(match, options = {}) {
 }
 
 async function createRound(round, matches, options = {}) {
-    const { height: matchCardHeight } = calcMatchCardSize(options);
-    const matchCardDividerGap = options.matchCardDividerGap || currentStyle.matchCardDividerGap;
-    const matchSize = matchCardHeight + matchCardDividerGap;
+    const {
+        width: matchCardWidth,
+        height: matchCardHeight
+    } = calcMatchCardSize(options);
+    const bracketRowGap = options.bracketRowGap || currentStyle.bracketRowGap;
+    const matchSize = matchCardHeight + bracketRowGap;
     const segmentSize = Math.pow(2, round) * matchSize;
 
-    const roundImage = await Jimp.read(400, segmentSize * matches.length);
+    const roundImage = await Jimp.read(matchCardWidth, segmentSize * matches.length);
     for( let i = 0; i < matches.length; ++i ) {
         const matchImage = await createMatchCard(matches[i]);
-        const matchY = (segmentSize * i) + Math.floor(segmentSize / 2) - Math.floor(matchSize / 2);
+        const matchY = (segmentSize * i) + Math.floor(segmentSize / 2) - Math.floor(matchSize / 2) + (bracketRowGap / 2);
 
-        roundImage.composite(matchImage, 0, matchY + matchCardDividerGap / 2);
+        roundImage.composite(matchImage, 0, matchY + bracketRowGap / 2);
     }
 
     return roundImage;
 }
 
-async function createBracket(bracket, options = {}) {
-    const bracketBackground = options.bracketBackground || currentStyle.bracketBackground;
+function calcBracketSize(rounds, options = {}) {
     const bracketColumnGap = options.bracketColumnGap || currentStyle.bracketColumnGap;
     const bracketRowGap = options.bracketRowGap || currentStyle.bracketRowGap;
-    const teamCardWidth = options.teamCardWidth || currentStyle.teamCardWidth;
-    const teamCardHeight = options.teamCardHeight || currentStyle.teamCardHeight;
-    const matchCardDividerGap = options.matchCardDividerGap || currentStyle.matchCardDividerGap;
-    const roundColumnWidth = (teamCardWidth + bracketColumnGap);
-    const matchCardHeight = teamCardHeight * 2 + matchCardDividerGap;
-    const rounds = bracket.totalRounds;
-    const totalWidth = rounds * 2 * roundColumnWidth;
-    const totalHeight = (matchCardHeight + bracketRowGap) * Math.pow(2, Math.max(rounds, 3)) / 4;
-    const bracketImage = await Jimp.read(totalWidth, totalHeight, bracketBackground);
+    const {
+        width: matchCardWidth,
+        height: matchCardHeight
+    } = calcMatchCardSize(options);
+    const roundColumnWidth = (matchCardWidth + bracketColumnGap);
 
-    for( let i = 0; i < rounds - 1; ++i ) {
+    const width = rounds * 2 * roundColumnWidth;
+    const height = (matchCardHeight + bracketRowGap) * Math.pow(2, Math.max(rounds, 3)) / 4;
+
+    return {
+        width,
+        height,
+        roundColumnWidth,
+        bracketColumnGap,
+        bracketRowGap
+    };
+}
+
+async function createBracket(bracket, options = {}) {
+    const bracketBackground = options.bracketBackground || currentStyle.bracketBackground;
+    const {
+        width: bracketWidth,
+        height: bracketHeight,
+        roundColumnWidth,
+        bracketColumnGap,
+        bracketRowGap
+    } = calcBracketSize(bracket.totalRounds, options);
+    const bracketImage = await Jimp.read(bracketWidth, bracketHeight, bracketBackground);
+
+    for( let i = 0; i < bracket.totalRounds - 1; ++i ) {
         const roundMatchesLeft = bracket.rounds[i].left;
         const roundMatchesRight = bracket.rounds[i].right;
 
@@ -186,18 +205,22 @@ async function createBracket(bracket, options = {}) {
         const roundImageRight = await createRound(i, roundMatchesRight);
 
         const roundXLeft = i * roundColumnWidth;
-        const roundXRight = totalWidth - roundXLeft - roundImageRight.bitmap.width;
+        const roundXRight = bracketWidth - roundXLeft - roundImageRight.bitmap.width;
 
         bracketImage.composite(roundImageLeft, roundXLeft, 0);
         bracketImage.composite(roundImageRight, roundXRight, 0);
     }
 
-    const finalMatchImage = await createMatchCard(bracket.rounds[rounds - 1], {
+    const {
+        width: teamCardWidth,
+        height: teamCardHeight
+    } = calcPlayerCardSize(options);
+    const finalMatchImage = await createMatchCard(bracket.rounds[bracket.totalRounds - 1], {
         teamCardWidth: teamCardWidth * 2,
         teamCardHeight: teamCardHeight * 2
     });
-    const finalX = (rounds - 1) * roundColumnWidth + bracketColumnGap;
-    const finalY = (totalHeight / 2) - (finalMatchImage.bitmap.height / 2);
+    const finalX = (bracket.totalRounds - 1) * roundColumnWidth + bracketColumnGap;
+    const finalY = (bracketHeight / 2) - (finalMatchImage.bitmap.height / 2);
     bracketImage.composite(finalMatchImage, finalX, finalY);
 
     return bracketImage;

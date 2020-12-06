@@ -71,7 +71,7 @@ const genzume = {
     //await round1.writeAsync(path.resolve(__dirname, 'round1.png'));
     //await round2.writeAsync(path.resolve(__dirname, 'round2.png'));
 
-    const bracket = BracketSystem.generateEmptyBracket(6);
+    const bracket = BracketSystem.generateEmptyBracket(5);
     const bracketImage = await ImageSystem.createBracket(bracket);
     await bracketImage.writeAsync(path.resolve(__dirname, 'output/bracket.png'));
 })();
